@@ -3,6 +3,18 @@
 > 面向"用 motex-web-core 搭自己站点"的项目开发者。
 > 最小心智模型：**一个项目 = 一个 cordis 插件文件 + 一个 cordis.yml**。
 
+## 0. 接入规范（必读）：引用，不许拷贝
+
+本框架是全体系**唯一 core**——你的项目只写"站点/页面插件"，core 保持同一份引用：
+
+- **本机开发**：`"motex-web-core": "file:../../Motex-web-core"`（目录链接，core 改动即时生效）
+- **远端/交付**：`"motex-web-core": "github:linxiaowen-928/Motex-web-core"`（git 依赖，可锁 tag/commit），
+  或 `git clone` 后按 file: 引用克隆目录
+
+**禁止**：复制 `node_modules/motex-web-core` / `src/` 源码进项目；禁止另写一套"自己的 webcore"。
+拷贝即分叉——core 的修复与新能力永远到不了你，还会出现多份相似但不兼容的框架。
+（需要确认版本行为时看 [CHANGELOG.md](../../CHANGELOG.md)，而不是另存一份。）
+
 ## 1. 起步骨架
 
 ```bash

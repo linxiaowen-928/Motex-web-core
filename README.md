@@ -34,6 +34,30 @@ npm run dev                 # 示例站 + 热更新
 
 ## 各项目使用方式（推荐：cordis.yml 声明式装配）
 
+> ### ⚠️ 接入规范：只许可「引用」，禁止「拷贝/另写」
+>
+> 所有基于本框架的项目**必须以下面两种方式之一接入**，以保证全体系共享同一份 core（单一事实来源，
+> 修复与能力即时同步、不产生版本分叉）：
+>
+> **方式 A（本机开发，推荐）——引用本地路径**：`package.json` 里用 `file:` 指向本机 core 目录
+> （npm 会建立目录链接，core 改动即时生效，无需重复安装）：
+> ```json
+> { "dependencies": { "motex-web-core": "file:../../Motex-web-core" } }
+> ```
+>
+> **方式 B（远端/交付）——从 GitHub 引用**：以 git 依赖锁定版本/tag，或 `git clone` 后按方式 A 引用
+> 克隆出来的目录：
+> ```json
+> { "dependencies": { "motex-web-core": "github:linxiaowen-928/Motex-web-core" } }
+> ```
+>
+> **❌ 禁止**：
+> - 不得把 `node_modules/motex-web-core` 或 `src/` 源码复制进自己的项目（拷贝即分叉，
+>   之后 core 的任何修复/新能力都到不了你，还会造成多份“相似但不兼容”的框架）
+> - 不得基于本框架的形态从头另写一套“自己的 webcore”（同样造成分叉）
+>
+> 一句话：**你写的是“站点/页面插件”，core 永远是同一份引用**。
+
 ```yaml
 # app.web.cordis.yml（DSH 同款格式）
 - id: pages
