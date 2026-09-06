@@ -18,6 +18,9 @@ export interface ServerConfig {
   portAutoShift: boolean
   /** 避让最大尝试次数（缺省 100：从首选端口起最多顺延 100 个端口；0 = 不避让） */
   portShiftLimit: number
+  /** 端口记忆（缺省 true）：把实际用到的端口记到 state/port.memory.json，
+   *  下次启动优先使用记忆端口（不再从首选端口重新探测漂移）——每个 web 尽量钉在固定端口 */
+  portMemory: boolean
   /** 项目静态资源根目录（缺省 = 内置 assets/；相对运行目录） */
   publicDir?: string
   /** 项目静态 URL 前缀（缺省 '/assets'） */
@@ -116,6 +119,7 @@ export function defaultConfig(): WebConfig {
       port: 18080,
       portAutoShift: true,
       portShiftLimit: 100,
+      portMemory: true,
       publicPrefix: '/assets',
       maxBodyBytes: 1024 * 1024,
       staticMaxAgeSec: 3600,

@@ -79,7 +79,7 @@ export async function mountSite(hostCtx: Context, cfg: HostSiteConfig): Promise<
   new ThemeService(scope, full.theme)
   new RenderService(scope, { runtime: scope })
   new PageService(scope, { runtime: scope, ns: cfg.id })
-  const server = new ServerService(scope, full.server, full.router, { runtime: scope })
+  const server = new ServerService(scope, full.server, full.router, { runtime: scope, portKey: cfg.id })
   // markup 工具（作用域内提供；站点插件/区块里 ctx.m / ctx.esc）
   scope.provide('m', markupM)
   scope.provide('esc', markupEsc)

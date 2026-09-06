@@ -12,13 +12,46 @@
  *   - WebSocket：ctx.server.ws(path, handler) 注册（路径前缀匹配），同 fiber 生命周期
  */
 import { Context, Service } from '@deepseek-ai/cordis'
+import { mkdirSync, readFileSync, writeFileSync } from 'node:fs'
 import { createServer, type IncomingMessage, type ServerResponse } from 'node:http'
 import type { AddressInfo } from 'node:net'
+import { dirname, join } from 'node:path'
 import type { Duplex } from 'node:stream'
 import { WebSocketServer, type WebSocket } from 'ws'
 import type { RouterConfig, ServerConfig } from '../config.ts'
 import { esc } from '../markup.ts'
 import { HttpResponse, type HttpRequest, type Middleware } from '../types.ts'
+
+/** 端口记忆文件：state/port.memory.json —— { [key]: { at: 实际端口, for: 当时的配置端口 } } */
+const PORT_MEMORY_FILE = join(process.cwd(), 'state', 'port.memory.json')
+
+interface PortMemoryEntry {
+  /** 上次实际监听端口 */
+  at: number
+  /** 记忆时的配置首选端口（配置变更后记忆失效，以新配置为准） */
+  for: number
+}
+
+function readPortMemory(key: string): PortMemoryEntry | undefined {
+  try {
+    const data = JSON.parse(readFileSync(PORT_MEMORY_FILE, 'utf-8')) as Record<string, PortMemoryEntry>
+    return data[key]
+  } catch {
+    return undefined
+  }
+}
+
+function writePortMemory(key: string, entry: PortMemoryEntry): void {
+  try {
+    mkdirSync(dirname(PORT_MEMORY_FILE), { recursive: true })
+    let data: Record<string, PortMemoryEntry> = {}
+    try {
+      data = JSON.parse(readFileSync(PORT_MEMORY_FILE, 'utf-8')) as Record<string, PortMemoryEntry>
+    } catch { /* 首次写入 */ }
+    data[key] = entry
+    writeFileSync(PORT_MEMORY_FILE, JSON.stringify(data, null, 2), 'utf-8')
+  } catch { /* 记忆失败不影响启动 */ }
+}
 
 /** HTTP 错误（中间件/处理器可抛出：throw new HttpError(403, 'no')） */
 export class HttpError extends Error {
@@ -41,13 +74,16 @@ export class ServerService extends Service {
   private wsRoutes = new Map<string, WsHandler>()
   /** 运行期上下文（共享核多站点模式：站点作用域 ctx；缺省 = root 全局视图） */
   private runtimeCtx: Context | null = null
+  /** 端口记忆键（常规应用 'default'；共享核站点 = 站点 id） */
+  private portKey: string
   startedAt = 0
 
-  constructor(ctx: Context, config: ServerConfig, routerConfig: RouterConfig, opts: { runtime?: Context } = {}) {
+  constructor(ctx: Context, config: ServerConfig, routerConfig: RouterConfig, opts: { runtime?: Context; portKey?: string } = {}) {
     super(ctx, 'server')
     this.config = config
     this.routerConfig = routerConfig
     this.runtimeCtx = opts.runtime ?? null
+    this.portKey = opts.portKey ?? 'default'
   }
 
   // ===== WebSocket =====
@@ -84,12 +120,22 @@ export class ServerService extends Service {
 
   /** 启动（返回实际监听端口）；重复启动为幂等。
    *  端口避让：首选端口被占用（EADDRINUSE）且配置允许时自动 +1 顺延
-   *  （portAutoShift + portShiftLimit）——多项目以本框架为 core 并存互不冲突。 */
+   *  （portAutoShift + portShiftLimit）——多项目以本框架为 core 并存互不冲突。
+   *  端口记忆（portMemory）：实际端口写入 state/port.memory.json（按 portKey 记），
+   *  下次启动优先用【上次实际端口】（而非从首选端口重新探测）——每个 web 尽量钉在固定端口，
+   *  不因启动顺序/他站占用而漂移；用户修改配置端口（for 对照）后以新配置为准。 */
   async start(): Promise<number> {
     if (this.server) return this.port()
     const self = this
     const maxShift = this.config.portAutoShift ? this.config.portShiftLimit : 0
-    let port = this.config.port
+    // 端口记忆：随机端口（0）不记忆；记忆仅当“记忆时的配置端口”== 当前配置端口时有效
+    const memory = this.config.portMemory && this.config.port !== 0
+      ? readPortMemory(this.portKey)
+      : undefined
+    let port = (memory && memory.for === this.config.port) ? memory.at : this.config.port
+    if (port !== this.config.port) {
+      this.ctx.logger.info('[server] 端口记忆：上次实际端口 %d（配置首选 %d），优先使用', port, this.config.port)
+    }
     for (;;) {
       const server = createServer((req, res) => {
         void self.handle(req, res)
@@ -117,6 +163,10 @@ export class ServerService extends Service {
       }
     }
     const actual = this.port()
+    // 写回端口记忆（稳定端口：下次优先用 actual）
+    if (this.config.portMemory && this.config.port !== 0) {
+      writePortMemory(this.portKey, { at: actual, for: this.config.port })
+    }
     this.ctx.emit('web/ready', actual)
     this.ctx.logger.info('[server] 监听 http://%s:%d', this.config.host, actual)
     return actual
