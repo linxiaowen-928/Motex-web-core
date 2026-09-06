@@ -116,6 +116,12 @@ export interface RegistryConfig {
   icon?: string
   /** 心跳间隔秒（缺省 30；注册中心按 90s 无心跳自动下架） */
   heartbeatSec?: number
+  /** 授权注册中心托管启停（缺省 false = 只读展示；true 需同时给 startCmd/cwd） */
+  managed?: boolean
+  /** 宿主拉起本应用的命令（managed 时必填，如 'npm run serve'） */
+  startCmd?: string
+  /** 宿主拉起时的工作目录（managed 时建议填；缺省宿主 cwd） */
+  cwd?: string
 }
 
 /** ===== 总配置 ===== */

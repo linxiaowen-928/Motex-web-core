@@ -32,6 +32,10 @@ export function attachRegistry(ctx: Context, config: RegistryConfig, port: numbe
     group: config.group,
     icon: config.icon,
     mode: 'external',
+    // 托管授权：注册中心可启停本应用（startCmd/cwd 供宿主拉起）
+    managed: config.managed ?? false,
+    startCmd: config.startCmd,
+    cwd: config.cwd,
   }
   let disposed = false
 
