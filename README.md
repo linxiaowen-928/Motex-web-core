@@ -127,9 +127,11 @@ src/
 
 ## 文档
 
+- [UPGRADING.md](UPGRADING.md)——**升级必读**：各版本升级文档索引（改动清单/破坏性改动/手动操作项）
 - [docs/architecture.md](docs/architecture.md)——架构说明（模块地图/装配模型/数据流/扩展机制/设计原则）
 - [docs/guide-页面开发.md](docs/guide-页面开发.md)——页面/区块/API/会话/i18n 开发指南
 - [docs/guide-扩展.md](docs/guide-扩展.md)——服务替换/中间件/事件/布局/主题扩展指南
+- [CHANGELOG.md](CHANGELOG.md)——版本变更索引（每版本链接对应升级文档）
 - [examples/](examples/)——可直接运行的示例站（页面/区块/i18n/会话/API/管理后台全演示）
 
 ## 许可
