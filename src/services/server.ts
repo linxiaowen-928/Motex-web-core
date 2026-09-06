@@ -209,52 +209,64 @@ export class ServerService extends Service {
 
   // ===== 请求处理链 =====
 
+  /**
+   * 请求处理统一使用 root ctx（全局服务视图）：
+   * 插件在任意 fiber 提供的服务（如导航站的 nav）都能属性访问——
+   * 若用本服务的 ctx（web 插件 fiber，严格模式），兄弟 fiber 提供的服务会
+   * "cannot get property without inject"。事件总线本就全局，emit 不受影响。
+   */
+  private reqCtx(): Context {
+    return this.ctx.root
+  }
+
   async handle(rawReq: IncomingMessage, nodeRes: ServerResponse): Promise<void> {
     const req = this.parseRequest(rawReq)
     const res = new HttpResponse()
+    const ctx = this.reqCtx()
     try {
       req.body = await this.readBody(rawReq)
-      this.ctx.emit('web/request', req)
-      await this.dispatch(req, res)
+      ctx.emit('web/request', req)
+      await this.dispatch(req, res, ctx)
     } catch (e) {
       if (e instanceof HttpError) {
         res.status = e.status
         res.text(e.message)
       } else {
-        this.ctx.emit('web/error', e, req)
-        this.ctx.logger.error('[server] 处理 %s %s 失败: %s', req.method, req.url, String(e).slice(0, 200))
+        ctx.emit('web/error', e, req)
+        ctx.logger.error('[server] 处理 %s %s 失败: %s', req.method, req.url, String(e).slice(0, 200))
         if (!res.isHandled()) {
           res.status = 500
           res.text('Internal Server Error')
         }
       }
     }
-    this.ctx.emit('web/response', req, res)
+    ctx.emit('web/response', req, res)
     this.write(nodeRes, res)
   }
 
-  /** 路由/静态/中间件分发（供 manage 或调试复用） */
-  async dispatch(req: HttpRequest, res: HttpResponse): Promise<void> {
+  /** 路由/静态/中间件分发（供 manage 或调试复用；ctx 为运行期上下文，默认 root） */
+  async dispatch(req: HttpRequest, res: HttpResponse, ctx?: Context): Promise<void> {
+    const run = ctx ?? this.reqCtx()
     // 1. 静态资源（前缀命中即服务，路由不参与）
     const prefix = this.config.publicPrefix
     if (prefix && (req.path === prefix || req.path.startsWith(prefix + '/'))) {
       const rel = req.path.slice(prefix.length).replace(/^\/+/, '')
-      if (this.ctx.asset.serve(rel, res, this.config.staticMaxAgeSec)) return
+      if (run.asset.serve(rel, res, this.config.staticMaxAgeSec)) return
       // 静态资源缺失 → 404（不进路由）
       res.notFound('asset not found')
       return
     }
 
     // 2. 路由匹配
-    const match = this.ctx.router.match(req.method, req.path)
-    const chain: Middleware[] = [...this.ctx.router.globals(), ...(match?.middleware ?? [])]
+    const match = run.router.match(req.method, req.path)
+    const chain: Middleware[] = [...run.router.globals(), ...(match?.middleware ?? [])]
 
     // 3. 中间件链（不调 next 即短路）
     let idx = 0
     const next = async (): Promise<void> => {
       if (idx < chain.length) {
         const mw = chain[idx++]
-        await mw(this.ctx, req, res, next)
+        await mw(run, req, res, next)
       }
     }
     let mwErr: unknown = null
@@ -266,7 +278,7 @@ export class ServerService extends Service {
 
     // 4. 路由 handler（中间件未短路、未抛错、响应未处理时执行）
     if (mwErr === null && !res.isHandled() && match) {
-      const result = await match.entry.handler(this.ctx, req, res, match.params)
+      const result = await match.entry.handler(run, req, res, match.params)
       if (!res.isHandled()) {
         if (result !== undefined) {
           this.maybeJson(res, result)
@@ -280,7 +292,7 @@ export class ServerService extends Service {
     if (mwErr === null && !res.isHandled()) {
       if (this.routerConfig.pretty404 && !req.path.startsWith(this.routerConfig.apiPrefix)) {
         res.status = 404
-        res.html(this.render404(req))
+        res.html(this.render404(req, run))
       } else {
         res.notFound('not found')
       }
@@ -302,9 +314,9 @@ export class ServerService extends Service {
   }
 
   /** 内置 404 页面（纯 SSR 风格，与主题一致） */
-  private render404(req: HttpRequest): string {
-    const site = this.ctx.theme.siteName()
-    const body = `<div class="motex-app" data-theme="${esc(this.ctx.theme.themeId())}">
+  private render404(req: HttpRequest, run: Context): string {
+    const site = run.theme.siteName()
+    const body = `<div class="motex-app" data-theme="${esc(run.theme.themeId())}">
 <div class="motex-container motex-404">
   <h1>404</h1>
   <p>页面不存在：${esc(req.path)}</p>
@@ -317,7 +329,7 @@ export class ServerService extends Service {
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>404 · ${esc(site)}</title>
-<link rel="stylesheet" href="${this.ctx.asset.url('base.css')}">
+<link rel="stylesheet" href="${run.asset.url('base.css')}">
 </head>
 <body>
 ${body}

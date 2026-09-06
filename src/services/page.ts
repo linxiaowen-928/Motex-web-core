@@ -61,7 +61,8 @@ export class PageService extends Service {
     return this.ctx.get(`page.${id}`, false) as Page | undefined
   }
 
-  /** 页面完整流水线：数据 → 区块 → 布局 → HTML（详情见 render.ts） */
+  /** 页面完整流水线：数据 → 区块 → 布局 → HTML（详情见 render.ts）。
+   *  渲染链统一使用 root ctx（全局服务视图，见 server.ts reqCtx 的说明）。 */
   async renderPage(page: Page, req: HttpRequest, res: HttpResponse): Promise<void> {
     await this.ctx.render.renderPage(page, req, res)
   }
@@ -74,48 +75,49 @@ export class PageService extends Service {
     head: string
     errors: string[]
   }> {
-    const lang = this.ctx.i18n.resolveLang(req)
+    const run = this.ctx.root
+    const lang = run.i18n.resolveLang(req)
     let data: unknown = null
     if (page.data) {
       try {
-        data = await page.data(this.ctx, req, res)
+        data = await page.data(run, req, res)
       } catch (e) {
-        this.ctx.emit('web/error', e, req)
-        this.ctx.logger.warn('[page] %s 数据加载失败: %s', page.id, String(e).slice(0, 160))
+        run.emit('web/error', e, req)
+        run.logger.warn('[page] %s 数据加载失败: %s', page.id, String(e).slice(0, 160))
       }
     }
-    this.ctx.emit('page/data', page.id, req, data)
+    run.emit('page/data', page.id, req, data)
 
     const parts: string[] = []
     const requires = new Set<string>()
     const errors: string[] = []
     for (const ref of page.blocks ?? []) {
       const spec = typeof ref === 'string' ? { id: ref } : ref
-      const block = this.ctx.get(`page-block.${spec.id}`, false) as import('../types.ts').PageBlock | undefined
+      const block = run.get(`page-block.${spec.id}`, false) as import('../types.ts').PageBlock | undefined
       try {
         if (!block) {
-          const msg = `页面 ${page.id} 引用的区块 ${spec.id} 未注册（页面区块缺省应经 ctx.provide('page-block.<id>')）`
+          const msg = `页面 ${page.id} 引用的区块 ${spec.id} 未注册（页面区块缺省应经 ctx.page.block 注册）`
           errors.push(msg)
-          this.ctx.logger.warn('[render] %s', msg)
+          run.logger.warn('[render] %s', msg)
           continue
         }
         const html = await block.render({
-          ctx: this.ctx,
+          ctx: run,
           req,
           res,
           page,
           config: spec.config,
           data,
-          m: this.ctx.m,
-          esc: this.ctx.esc,
+          m: run.m,
+          esc: run.esc,
         })
         parts.push(html)
         for (const r of block.requires ?? []) requires.add(r)
       } catch (e) {
         const msg = `区块 ${spec.id} 渲染失败: ${String(e).slice(0, 120)}`
         errors.push(msg)
-        this.ctx.emit('web/error', e, req)
-        this.ctx.logger.error('[render] %s', msg)
+        run.emit('web/error', e, req)
+        run.logger.error('[render] %s', msg)
         parts.push(`<div class="motex-block-error" data-block="${spec.id}">区块渲染失败（详见日志）</div>`)
       }
     }
