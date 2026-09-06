@@ -3,6 +3,13 @@
 > **发版规则**：每个版本必须配套一份升级文档（[docs/upgrades/](docs/upgrades/)，见 [UPGRADING.md](UPGRADING.md)），
 > 说明改动清单与破坏性改动（BREAKING）处理方式；本清单只做索引式摘要。
 
+## 0.2.3 (2026-09-07) · [升级文档](docs/upgrades/0.2.3.md)
+
+### 修复
+- 浏览器控件初始化顺序：base.js（控件运行时）移入 `<head>` 且先于区块 requires 脚本——
+  修复"项目自写控件（如门户启停按钮）点击零响应且无日志"的根因（defer 文档序执行，
+  区块脚本先跑时 window.MOTEX 未定义）
+
 ## 0.2.2 (2026-09-06) · [升级文档](docs/upgrades/0.2.2.md)
 
 ### 新增

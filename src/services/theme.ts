@@ -86,7 +86,9 @@ export class ThemeService extends Service {
   }
 
   /** 内置默认布局：品牌头 + 主体 + 版权脚（内容全部来自页面区块）；
-   *  body 末尾下发页面数据（#motex-page-data JSON）与浏览器增强层 base.js */
+   *  body 末尾下发页面数据（#motex-page-data JSON）。
+   *  ⚠️ base.js（控件运行时）必须在 <head> 且【先于】所有区块 requires 脚本执行——
+   *  defer 按文档顺序执行，若区块脚本（如 nav.js）先跑会因 window.MOTEX 未定义而整体失效。 */
   private defaultMainLayout(lctx: LayoutContext): string {
     const { m: h, esc: e } = lctx
     // 资源 URL 经运行上下文（单站点 = root；共享核 = 站点作用域——asset 共享宿主实例）
@@ -102,11 +104,11 @@ export class ThemeService extends Service {
             `© ${new Date().getFullYear()} ${e(lctx.siteName)}`)),
       ),
       scriptJson('motex-page-data', lctx.data),
-      scriptTag(asset.url('base.js')),
     )
-    // head 里默认带主题变量样式与页面声明的资源
+    // head：base.css → base.js（控件运行时，必须先于区块脚本）→ 区块声明的资源
     const head = joinMarkup(
       styleTag(asset.url('base.css')),
+      scriptTag(asset.url('base.js')),
       lctx.head,
     )
     return document({ lang: lctx.lang, title: lctx.title, head, body })

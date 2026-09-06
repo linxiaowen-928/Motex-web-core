@@ -64,10 +64,9 @@ export default Object.assign(
       },
     })
 
-    // 特性列表：data 数组驱动渲染
+    // 特性列表：data 数组驱动渲染（base.js 由布局统一引入，无需 requires 声明）
     ctx.page.block({
       id: 'features',
-      requires: ['base.js'],
       render: ({ ctx: c, req, m: h, esc: e, data }) => {
         const langs = c.i18n.languages()
         const items = (data as { features?: { title: string; desc: string }[] }).features ?? []
