@@ -1,0 +1,34 @@
+{
+    "scripts": {
+        "self-test-cordis": "node --experimental-strip-types src/cli.ts --cordis examples/selftest.cordis.yml",
+        "self-test": "node --experimental-strip-types src/cli.ts --self-test",
+        "serve": "node --experimental-strip-types src/cli.ts --cordis examples/example.cordis.yml",
+        "dev": "node --experimental-strip-types src/cli.ts --cordis examples/example.cordis.yml --watch"
+    },
+    "description": "通用 Web 前台框架核心（纯服务端渲染：server/router/page/render/asset/session/i18n/theme/manage，cordis.yml 声明式装配与热更新）——各项目以 cordis 插件扩展页面/区块/语言包",
+    "type": "module",
+    "version": "0.1.0",
+    "license": "MIT",
+    "name": "motex-web-core",
+    "main": "src/index.ts",
+    "exports": {
+        "./loader": "./src/loader.ts",
+        "./web": "./src/web.ts",
+        "./markup": "./src/markup.ts",
+        "./package.json": "./package.json",
+        ".": "./src/index.ts"
+    },
+    "dependencies": {
+        "@deepseek-ai/cordis": "^4.0.2",
+        "@deepseek-ai/cordis-plugin-include": "^1.0.7",
+        "@deepseek-ai/cordis-plugin-loader": "^1.0.3",
+        "js-yaml": "^4.1.0",
+        "ws": "^8.18.0"
+    },
+    "devDependencies": {
+        "@types/js-yaml": "^4.0.9",
+        "@types/node": "^26.4.1",
+        "@types/ws": "^8.18.1",
+        "typescript": "^7.0.2"
+    }
+}

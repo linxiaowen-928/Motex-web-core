@@ -1,0 +1,16 @@
+{
+  "server": { "host": "127.0.0.1", "port": 18080 },
+  "theme": {
+    "siteName": "Motex Demo",
+    "titleSuffix": " · {siteName}"
+  },
+  "i18n": {
+    "defaultLang": "zh-CN",
+    "supportedLangs": ["zh-CN", "en-US"]
+  },
+  "session": {
+    "cookieName": "motex_demo_sid",
+    "maxAgeSec": 604800
+  },
+  "manage": { "enabled": true, "api": true, "web": true }
+}

@@ -1,0 +1,5 @@
+{
+  "server": { "host": "127.0.0.1", "port": 0 },
+  "theme": { "siteName": "自检站" },
+  "manage": { "enabled": true, "api": true, "web": true }
+}

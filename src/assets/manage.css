@@ -1,0 +1,46 @@
+/* 管理后台样式（manage 页专用，叠加在 base.css 之上） */
+
+.mg-app { min-height: 100vh; display: flex; flex-direction: column; }
+
+.mg-badge {
+  font-size: 12px;
+  color: var(--accent);
+  border: 1px solid var(--accent);
+  border-radius: 999px;
+  padding: 2px 10px;
+}
+
+.mg-card {
+  background: var(--code-bg);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 14px 18px;
+  margin: 14px 0;
+  box-shadow: var(--shadow);
+}
+
+.mg-card h3 {
+  margin: 0 0 8px;
+  font-size: 14px;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.mg-card p { margin: 4px 0; font-size: 14px; }
+
+.mg-dim { color: var(--muted); }
+
+.mg-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+
+.mg-table th, .mg-table td {
+  text-align: left;
+  padding: 6px 10px;
+  border-bottom: 1px solid var(--border);
+}
+
+.mg-table th { color: var(--muted); font-weight: 600; }

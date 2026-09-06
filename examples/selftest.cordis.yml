@@ -1,0 +1,17 @@
+# cordis.yml 装配链路自检：完整验证 DSH 式声明式装配（loader → 相对路径页面插件 → web 插件）
+#
+# 运行：npm run self-test-cordis（等价 node --experimental-strip-types src/cli.ts --cordis examples/selftest.cordis.yml）
+# 期望输出：[self-test] ALL PASS ✅
+#
+# 顺序要求：页面插件条目必须排在 web 之前（先提供 page.<id>/page-block.<id>，路由分派时才可解析）。
+
+# 页面插件：相对路径 .ts 直接加载（strip-types），注册语言包/区块/页面/API/WS
+- id: pages
+  name: './selftest-pages.ts'
+
+# web 插件：内建 'cordis:web'（等价 'motex-web-core/web'，用户项目里两种写法都行）
+- id: web
+  name: 'cordis:web'
+  config:
+    config: './selftest.web.config.json'   # 随机端口 + 管理后台开启
+    selfTest: true                          # 装配完成后跑完整断言

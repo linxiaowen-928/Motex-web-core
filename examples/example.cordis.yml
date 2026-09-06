@@ -1,0 +1,17 @@
+# 示例站装配（演示 cordis.yml 声明式装配 — DSH 同款格式）
+#
+# 运行：
+#   npm run serve            # 启动 http://127.0.0.1:8080
+#   npm run dev              # 启动 + 热更新（改 pages.ts / 本文件即生效，不重启）
+#
+# 管理后台：http://127.0.0.1:8080/manage
+
+# 页面插件：相对路径 .ts 直接加载（strip-types），注册语言包/区块/页面/API/会话
+- id: example-pages
+  name: './pages/pages.ts'
+
+# web 插件：core 内建（等价 'motex-web-core/web'），装配全部服务并启动
+- id: web
+  name: 'cordis:web'
+  config:
+    config: './web.config.json'

@@ -1,0 +1,112 @@
+# Motex-web-core
+
+通用 **Web 前台框架核心**（纯服务端渲染）：基于 cordis 声明式装配，各项目通过 **cordis 插件**扩展页面/区块/语言包/API/会话，核心保持零项目个性化——与 Motex-fetcher-core 完全同构的哲学：
+
+```
+fetcher-core:  cordis.yml + 站点插件(provide site.<id>) + fetcher 插件 → 抓取
+web-core:      cordis.yml + 页面插件(provide page.<id>) + web 插件     → 渲染网站
+```
+
+## 能力（全家桶）
+
+- **页面 = cordis 服务**：`ctx.page.register({...})` 注册页面（路径/标题/布局），经 DI 分派，可替换/隔离
+- **区块 = cordis 服务**：`ctx.page.block({...})`——页面 = 布局 + 区块列表，公共区块跨页复用、可换实现
+- **纯服务端渲染**：服务端直出完整 HTML（`ctx.m()`/`ctx.esc()` 自动转义防 XSS）；浏览器端仅原生 base.js 控件（`data-motex-*` 注册表，可扩展），零前端框架
+- **服务器**：HTTP + WebSocket + 中间件链（短路语义）+ 静态资源（项目目录覆盖内置）
+- **API**：`ctx.router.api(id, path, handler)`——返回值自动 JSON；POST body 解析；路由模板 `:param`/`*`
+- **会话**：cookie 会话（HMAC 签名 + memory/file 存储可换）、`ctx.session.ensure/restore/destroy`
+- **i18n**：语言包插件注册（`ctx.i18n.register('en-US', {...})`）、URL/cookie/Accept-Language 三级解析、`ctx.i18n.t(lang, key, {param})`
+- **主题/布局**：布局 = 服务（`ctx.provide('layout.<id>', renderer)`），内置默认 main 布局 + CSS 变量主题
+- **管理后台**（可选）：`/manage` 页面 + API（状态/路由表/页面清单/清会话）
+- **cordis 原生装配**：DSH 同款 `*.cordis.yml` 声明式启动；`cordis:include` 多文件组合；`--watch` 热更新——改页面插件/配置即生效，不重启
+- **自检**：main 路径 + cordis 装配链路双重自检
+
+## 快速开始
+
+```bash
+npm install
+npm run self-test           # 框架自检（main 路径）
+npm run self-test-cordis    # cordis 装配链路自检（loader → 页面插件 → web 插件）
+npm run serve               # 跑示例站 http://127.0.0.1:18080
+npm run dev                 # 示例站 + 热更新
+```
+
+## 各项目使用方式（推荐：cordis.yml 声明式装配）
+
+```yaml
+# app.web.cordis.yml（DSH 同款格式）
+- id: pages
+  name: './pages/pages.ts'      # 项目页面插件（相对本文件，.ts 直接加载）
+- id: web
+  name: 'cordis:web'            # 核心 web 插件（或 'motex-web-core/web'）
+  config:
+    config: './web.config.json' # server/session/i18n/theme/manage 配置
+```
+
+```bash
+node --experimental-strip-types node_modules/motex-web-core/src/cli.ts --cordis app.web.cordis.yml
+# 常驻 + 热更新：运行中改页面/配置即生效
+node --experimental-strip-types node_modules/motex-web-core/src/cli.ts --cordis app.web.cordis.yml --watch
+```
+
+### 写一个页面插件（一个插件 = 一个项目/站点）
+
+```ts
+// pages/pages.ts
+import { Context } from '@deepseek-ai/cordis'
+
+export default Object.assign(function mySitePages(ctx: Context) {
+  // 语言包（语言学在项目侧）
+  ctx.i18n.register('zh-CN', { home: { title: '首页' }, common: { hello: '你好，{name}' } })
+
+  // 公共区块（跨页面复用）
+  ctx.page.block({
+    id: 'nav',
+    render: ({ ctx: c, req, m: h, esc: e }) =>
+      h('nav',
+        h('a', { href: '/' }, e(c.i18n.t(c.i18n.resolveLang(req), 'home.title')))),
+  })
+
+  // 页面 = 布局 + 区块组成
+  ctx.page.register({
+    id: 'home', path: '/',
+    title: (c, req) => c.i18n.t(c.i18n.resolveLang(req), 'home.title'),
+    blocks: ['nav'],
+    data: async () => ({ anything: 1 }),
+  })
+
+  // API（返回值自动 JSON）
+  ctx.router.api('greet', '/api/greet', (_c, req) => ({
+    hello: `你好，${req.query.name ?? 'world'}`,
+  }))
+}, {
+  // ⚠️ cordis v4：apply 内访问 ctx.<服务> 必须声明依赖
+  inject: ['i18n', 'router', 'page'],
+})
+```
+
+## 目录
+
+```
+src/
+├── index.ts              # 核心：createWebApp/runWeb/main（CLI）+ 全部导出
+├── web.ts                # web 插件（cordis 插件形式：装配全部服务 + 启动）
+├── loader.ts             # cordis.yml 装载器（DSH 同款：include 组合 + --watch 热更新）
+├── cli.ts                # CLI 入口（--cordis / --self-test / --config）
+├── selftest.ts           # 双重自检（main 路径 + cordis 装配链路，公共断言集）
+├── config.ts / types.ts / markup.ts
+├── services/             # server / router / page / render / asset / session / i18n / theme / manage
+├── plugins/pipeline.ts   # 事件接线（会话闪存/访问日志）
+└── assets/               # base.css 主题变量 + base.js 浏览器控件库 + manage.css
+```
+
+## 文档
+
+- [docs/architecture.md](docs/architecture.md)——架构说明（模块地图/装配模型/数据流/扩展机制/设计原则）
+- [docs/guide-页面开发.md](docs/guide-页面开发.md)——页面/区块/API/会话/i18n 开发指南
+- [docs/guide-扩展.md](docs/guide-扩展.md)——服务替换/中间件/事件/布局/主题扩展指南
+- [examples/](examples/)——可直接运行的示例站（页面/区块/i18n/会话/API/管理后台全演示）
+
+## 许可
+
+MIT
