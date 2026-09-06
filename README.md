@@ -74,18 +74,24 @@ node --experimental-strip-types node_modules/motex-web-core/src/cli.ts --cordis 
 node --experimental-strip-types node_modules/motex-web-core/src/cli.ts --cordis app.web.cordis.yml --watch
 ```
 
-### 自动接入导航站（可选，一行配置）
+### 自动接入导航站（可选，零侵入）
 
 配了 `registry.url` 的应用**启动即自动上架**到导航站/注册中心（心跳续命，90s 无心跳自动下架）：
 
 ```jsonc
-// web.config.json
+// web.config.json —— 纯展示
 { "registry": { "url": "http://127.0.0.1:19090", "name": "我的站点", "group": "我的项目" } }
+
+// 展示 + 授权导航站托管启停（managed 需同时给 startCmd/cwd）
+{ "registry": {
+    "url": "http://127.0.0.1:19090",
+    "name": "我的站点", "desc": "…", "tags": ["prod"], "group": "我的项目", "icon": "🚀",
+    "managed": true, "startCmd": "npm run serve", "cwd": "E:/…/my-site" } }
 ```
 
 - 缺省不启用；不配置 = 行为完全不变
-- 已注册站点的展示字段：name/desc/tags/group/icon（都可省略）
-- 需要**托管启停**（导航站拉起/杀进程）的站点，仍用导航站 `sites.cordis.yml` 注册表条目
+- managed 授权后导航站可启停本应用（停止的进程条目保留离线态，可再拉起）
+- 需要共享核挂载（省进程、插件挂导航站进程内）的站点，用导航站 `sites.cordis.yml` 的 host-site 条目
 
 ### 写一个页面插件（一个插件 = 一个项目/站点）
 
