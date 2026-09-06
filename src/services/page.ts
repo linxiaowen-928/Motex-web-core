@@ -13,17 +13,37 @@ import type { HttpRequest, HttpResponse, Page, PageBlock } from '../types.ts'
 export class PageService extends Service {
   /** 已注册页面（id → page；生命周期托管，manage 页/调试用） */
   private pageMap = new Map<string, Page>()
+  /** 运行期上下文（共享核多站点：站点作用域；缺省 root 全局视图） */
+  private runtimeCtx: Context | null = null
+  /** 站点命名空间（共享核多站点：page.<id>/page-block.<id> 等动态服务名加 ns 防全局冲突） */
+  private ns: string
 
-  constructor(ctx: Context) {
+  constructor(ctx: Context, opts: { runtime?: Context; ns?: string } = {}) {
     super(ctx, 'page')
+    this.runtimeCtx = opts.runtime ?? null
+    this.ns = opts.ns ? `${opts.ns}.` : ''
+  }
+
+  /** 动态服务名（ns 化）：共享核下同名页面/区块互不冲突 */
+  private pageKey(id: string): string {
+    return `page.${this.ns}${id}`
+  }
+
+  private blockKey(id: string): string {
+    return `page-block.${this.ns}${id}`
+  }
+
+  /** 渲染运行上下文（同 ServerService.reqCtx 语义） */
+  protected runCtx(): Context {
+    return this.runtimeCtx ?? this.ctx.root
   }
 
   /** 注册一个页面（页面插件唯一的入口；返回注销函数）。
    *  注意命名：不能叫 page()——ctx.page 已被 PageService 服务本身占用（cordis 服务属性） */
   register(page: Page): () => void {
     const self = this
-    // 1. 页面本体注册为服务（可替换/隔离）
-    this.ctx.provide(`page.${page.id}`, page)
+    // 1. 页面本体注册为服务（可替换/隔离；ns 化防站点间冲突）
+    this.ctx.provide(this.pageKey(page.id), page)
     // 2. 路由登记（与页面同生命周期，热更新卸载时一并撤销）
     const dispose = this.ctx.router.route({
       id: page.id,
@@ -41,12 +61,12 @@ export class PageService extends Service {
     return dispose
   }
 
-  /** 注册一个区块（带类型，免 provide 的 any 退化；生命周期托管）。
+  /** 注册一个区块（带类型，免 provide 的 any 退化；生命周期托管；ns 化防站点间冲突）。
    *  快捷等价 ctx.provide('page-block.<id>', block) */
   block(block: PageBlock): () => void {
     const self = this
     return this.ctx.effect(() => {
-      self.ctx.provide(`page-block.${block.id}`, block)
+      self.ctx.provide(self.blockKey(block.id), block)
       return () => { /* provide 随 fiber 卸载自动撤销 */ }
     })
   }
@@ -58,11 +78,11 @@ export class PageService extends Service {
 
   /** 取页面服务（经 DI；未注册返回 undefined） */
   get(id: string): Page | undefined {
-    return this.ctx.get(`page.${id}`, false) as Page | undefined
+    return this.ctx.get(this.pageKey(id), false) as Page | undefined
   }
 
   /** 页面完整流水线：数据 → 区块 → 布局 → HTML（详情见 render.ts）。
-   *  渲染链统一使用 root ctx（全局服务视图，见 server.ts reqCtx 的说明）。 */
+   *  渲染链统一使用运行上下文（root 或站点作用域，见 runCtx 的说明）。 */
   async renderPage(page: Page, req: HttpRequest, res: HttpResponse): Promise<void> {
     await this.ctx.render.renderPage(page, req, res)
   }
@@ -75,7 +95,7 @@ export class PageService extends Service {
     head: string
     errors: string[]
   }> {
-    const run = this.ctx.root
+    const run = this.runCtx()
     const lang = run.i18n.resolveLang(req)
     let data: unknown = null
     if (page.data) {
@@ -93,7 +113,7 @@ export class PageService extends Service {
     const errors: string[] = []
     for (const ref of page.blocks ?? []) {
       const spec = typeof ref === 'string' ? { id: ref } : ref
-      const block = run.get(`page-block.${spec.id}`, false) as import('../types.ts').PageBlock | undefined
+      const block = run.get(this.blockKey(spec.id), false) as import('../types.ts').PageBlock | undefined
       try {
         if (!block) {
           const msg = `页面 ${page.id} 引用的区块 ${spec.id} 未注册（页面区块缺省应经 ctx.page.block 注册）`
@@ -126,8 +146,9 @@ export class PageService extends Service {
 
   /** 区块声明的资源 → head 标签串（.css → link，其余 → script） */
   private headResources(requires: Set<string>): string {
+    const run = this.runCtx()
     return joinMarkup([...requires].map((r) => {
-      const url = this.ctx.asset.url(r)
+      const url = run.asset.url(r)
       return r.endsWith('.css')
         ? `<link rel="stylesheet" href="${url}">`
         : `<script src="${url}" defer></script>`

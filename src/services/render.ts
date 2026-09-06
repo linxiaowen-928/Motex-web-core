@@ -3,20 +3,29 @@
  *
  * 与 PageService 的分工：PageService 负责注册与编排（renderBody），
  * RenderService 负责把编排结果变成完整页面输出（布局/标题/文档骨架）。
- * 渲染链统一使用 root ctx（全局服务视图）——见 server.ts reqCtx 的说明。
+ * 渲染链统一使用运行上下文：单站点 = root（全局视图）；共享核 = 站点作用域。
  */
 import { Context, Service } from '@deepseek-ai/cordis'
 import { joinMarkup } from '../markup.ts'
 import type { HttpRequest, HttpResponse, Page } from '../types.ts'
 
 export class RenderService extends Service {
-  constructor(ctx: Context) {
+  /** 运行期上下文（共享核多站点：站点作用域；缺省 root 全局视图） */
+  private runtimeCtx: Context | null = null
+
+  constructor(ctx: Context, opts: { runtime?: Context } = {}) {
     super(ctx, 'render')
+    this.runtimeCtx = opts.runtime ?? null
+  }
+
+  /** 渲染运行上下文（同 ServerService.reqCtx 语义） */
+  protected runCtx(): Context {
+    return this.runtimeCtx ?? this.ctx.root
   }
 
   /** 整页渲染入口（页面路由 handler 调用） */
   async renderPage(page: Page, req: HttpRequest, res: HttpResponse): Promise<void> {
-    const run = this.ctx.root
+    const run = this.runCtx()
     // 自定义整页渲染（不走 layout+blocks 流水线；res 传入可写 cookie）
     if (page.html) {
       try {

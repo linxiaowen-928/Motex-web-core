@@ -89,6 +89,8 @@ export class ThemeService extends Service {
    *  body 末尾下发页面数据（#motex-page-data JSON）与浏览器增强层 base.js */
   private defaultMainLayout(lctx: LayoutContext): string {
     const { m: h, esc: e } = lctx
+    // 资源 URL 经运行上下文（单站点 = root；共享核 = 站点作用域——asset 共享宿主实例）
+    const asset = lctx.ctx.asset
     const body = joinMarkup(
       h('div', { class: 'motex-app', 'data-theme': e(lctx.themeId) },
         h('header', { class: 'motex-header' },
@@ -100,11 +102,11 @@ export class ThemeService extends Service {
             `© ${new Date().getFullYear()} ${e(lctx.siteName)}`)),
       ),
       scriptJson('motex-page-data', lctx.data),
-      scriptTag(this.ctx.asset.url('base.js')),
+      scriptTag(asset.url('base.js')),
     )
     // head 里默认带主题变量样式与页面声明的资源
     const head = joinMarkup(
-      styleTag(this.ctx.asset.url('base.css')),
+      styleTag(asset.url('base.css')),
       lctx.head,
     )
     return document({ lang: lctx.lang, title: lctx.title, head, body })

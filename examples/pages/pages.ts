@@ -1,4 +1,4 @@
-﻿/**
+/**
  * 示例站页面插件——演示"一个项目 = 一个 cordis 插件文件"的使用方式：
  *
  * 1. 语言包：ctx.i18n.register（语言学在项目侧）
@@ -85,8 +85,8 @@ export default Object.assign(
       id: 'home', path: '/',
       title: (c, req) => c.i18n.t(c.i18n.resolveLang(req), 'home.heroTitle'),
       blocks: ['nav', { id: 'hero', config: { tag: 'example' } }, 'features'],
-      data: async (_c, req) => ({
-        now: new Date().toLocaleTimeString(req.headers['accept-language']?.split(',')[0] ?? 'zh-CN'),
+      data: async (c, req) => ({
+        now: new Date().toLocaleTimeString(c.i18n.resolveLang(req)),
         features: [
           { title: '页面 = 插件', desc: 'ctx.page.register：页面、路径、区块组合一处声明' },
           { title: '区块 = 服务', desc: "ctx.page.block：公共区块可复用、可替换" },

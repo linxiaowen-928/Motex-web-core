@@ -16,6 +16,7 @@ import { assembleWeb } from './web.ts'
 import { runSelfTest } from './selftest.ts'
 
 export { deepMerge, defaultConfig, loadConfig } from './config.ts'
+export type { WebConfig, ServerConfig, SessionConfig, I18nConfig, ThemeConfig, ManageConfig } from './config.ts'
 export { esc, escAttr, attrs, m, joinMarkup, document, scriptTag, styleTag, scriptJson } from './markup.ts'
 export type { Markup } from './markup.ts'
 export { HttpError } from './services/server.ts'
@@ -31,6 +32,8 @@ export { SessionService } from './services/session.ts'
 export { I18nService } from './services/i18n.ts'
 export { ThemeService } from './services/theme.ts'
 export { ManageService } from './services/manage.ts'
+export { mountSite, loadSitePlugin } from './services/host.ts'
+export type { HostSiteConfig, SiteMount } from './services/host.ts'
 export { webPlugin, assembleWeb } from './web.ts'
 
 /** 扩展选项：把 cordis 的 DI/事件/插件能力暴露给使用方（fetcher-core 同款模型） */

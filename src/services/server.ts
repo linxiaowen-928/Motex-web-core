@@ -39,12 +39,15 @@ export class ServerService extends Service {
   private server: ReturnType<typeof createServer> | null = null
   private wss: WebSocketServer | null = null
   private wsRoutes = new Map<string, WsHandler>()
+  /** 运行期上下文（共享核多站点模式：站点作用域 ctx；缺省 = root 全局视图） */
+  private runtimeCtx: Context | null = null
   startedAt = 0
 
-  constructor(ctx: Context, config: ServerConfig, routerConfig: RouterConfig) {
+  constructor(ctx: Context, config: ServerConfig, routerConfig: RouterConfig, opts: { runtime?: Context } = {}) {
     super(ctx, 'server')
     this.config = config
     this.routerConfig = routerConfig
+    this.runtimeCtx = opts.runtime ?? null
   }
 
   // ===== WebSocket =====
@@ -210,13 +213,14 @@ export class ServerService extends Service {
   // ===== 请求处理链 =====
 
   /**
-   * 请求处理统一使用 root ctx（全局服务视图）：
-   * 插件在任意 fiber 提供的服务（如导航站的 nav）都能属性访问——
-   * 若用本服务的 ctx（web 插件 fiber，严格模式），兄弟 fiber 提供的服务会
-   * "cannot get property without inject"。事件总线本就全局，emit 不受影响。
+   * 请求处理统一使用运行期上下文：
+   * - 常规模式 = root ctx（全局服务视图）：插件在任意 fiber 提供的服务都能属性访问
+   * - 共享核多站点模式 = 站点作用域 ctx（构造时 opts.runtime）：请求只在该站点
+   *   作用域内解析服务（页面/路由/会话等站点隔离，互不可见）
+   * 事件总线本就全局，emit 不受影响。
    */
   private reqCtx(): Context {
-    return this.ctx.root
+    return this.runtimeCtx ?? this.ctx.root
   }
 
   async handle(rawReq: IncomingMessage, nodeRes: ServerResponse): Promise<void> {

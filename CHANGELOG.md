@@ -1,5 +1,19 @@
 # Changelog
 
+## 0.2.0 (2026-09-06)
+
+### 新增：共享核多站点（Host 模式）
+- `mountSite(hostCtx, cfg)` / `loadSitePlugin()`：在唯一 cordis 进程内挂载站点——
+  业务服务名全隔离的作用域（page/router/render/session/i18n/theme/manage/server/m/esc/asset），
+  各站点独立端口 listener（请求按作用域分派，互不可见），asset 共享宿主实例。
+- 站点插件零改动接入（动态 import + 手动 apply，避开 active-fiber 嵌套 plugin 延迟坑）。
+- 运行期上下文参数化：ServerService/PageService/RenderService 支持 `opts.runtime`——
+  单站点 = root（全局视图）；共享核 = 站点作用域。
+- PageService 支持 `opts.ns`（站点命名空间）：`page.<id>/page-block.<id>` 动态服务名
+  加前缀，站点间同名页面/区块互不冲突。
+- index.ts 导出 WebConfig 等配置类型。
+- 示例修复：examples 页面 data 改用 `i18n.resolveLang`（宽容 Accept-Language 解析）。
+
 ## 0.1.1 (2026-09-06)
 
 ### 修复
