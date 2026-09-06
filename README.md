@@ -18,6 +18,7 @@ web-core:      cordis.yml + 页面插件(provide page.<id>) + web 插件     →
 - **i18n**：语言包插件注册（`ctx.i18n.register('en-US', {...})`）、URL/cookie/Accept-Language 三级解析、`ctx.i18n.t(lang, key, {param})`
 - **主题/布局**：布局 = 服务（`ctx.provide('layout.<id>', renderer)`），内置默认 main 布局 + CSS 变量主题
 - **管理后台**（可选）：`/manage` 页面 + API（状态/路由表/页面清单/清会话）
+- **共享核多站点（host 模式）**：`mountSite()` 在唯一 cordis 进程挂载多站点（业务作用域隔离 + 独立端口，插件零改动）；`process` 独立进程模式并存
 - **cordis 原生装配**：DSH 同款 `*.cordis.yml` 声明式启动；`cordis:include` 多文件组合；`--watch` 热更新——改页面插件/配置即生效，不重启
 - **自检**：main 路径 + cordis 装配链路双重自检
 
