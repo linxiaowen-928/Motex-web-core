@@ -32,6 +32,7 @@ import { SessionService } from './services/session.ts'
 import { I18nService } from './services/i18n.ts'
 import { ThemeService } from './services/theme.ts'
 import { ManageService } from './services/manage.ts'
+import { attachRegistry } from './services/registry.ts'
 import { attachPipeline } from './plugins/pipeline.ts'
 import { attachConsole } from './plugins/console.ts'
 
@@ -100,6 +101,13 @@ export const webPlugin = {
     }
     if (start) {
       await server.start()
+      // 自动注册（registry.url 配置了才生效）：向导航站/注册中心上报并心跳续命
+      if (cfg.registry?.url) {
+        const detach = attachRegistry(ctx, cfg.registry, server.port())
+        ctx.effect(() => {
+          return () => detach()
+        })
+      }
     }
   },
 }

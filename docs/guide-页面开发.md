@@ -174,9 +174,14 @@ MOTEX.register('hello', (el, motex) => {
   "session": { "cookieName": "motex_sid", "secret": "改我", "maxAgeSec": 604800, "storage": "memory", "fileDir": "state/sessions" },
   "i18n": { "defaultLang": "zh-CN", "supportedLangs": ["zh-CN", "en-US"], "cookieName": "motex_lang" },
   "theme": { "layout": "main", "theme": "light", "siteName": "Motex", "titleSuffix": " · {siteName}" },
-  "manage": { "enabled": false, "path": "/manage", "api": true, "web": true }
+  "manage": { "enabled": false, "path": "/manage", "api": true, "web": true },
+  "registry": { "url": "http://127.0.0.1:19090", "name": "我的站点", "desc": "…", "tags": ["prod"], "group": "我的项目", "icon": "🚀" }
 }
 ```
+
+> **自动接入导航站（可选）**：配了 `registry.url` 的应用启动即自动上架（心跳续命、
+> 90s 无心跳自动下架），门户卡片标注「自动注册」；需要托管启停的站点用导航站
+> `sites.cordis.yml` 注册表条目（yml 条目优先，与自动注册共存不冲突）。
 
 > **端口避让 + 端口记忆**：缺省首选端口 18080；**被占用时自动 +1 顺延**（18080 → 18081 → …，
 > 最多顺延 `server.portShiftLimit` 个，默认 100），多个以本框架为 core 的项目同时启动互不冲突。

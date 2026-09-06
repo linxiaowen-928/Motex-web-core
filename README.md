@@ -74,6 +74,19 @@ node --experimental-strip-types node_modules/motex-web-core/src/cli.ts --cordis 
 node --experimental-strip-types node_modules/motex-web-core/src/cli.ts --cordis app.web.cordis.yml --watch
 ```
 
+### 自动接入导航站（可选，一行配置）
+
+配了 `registry.url` 的应用**启动即自动上架**到导航站/注册中心（心跳续命，90s 无心跳自动下架）：
+
+```jsonc
+// web.config.json
+{ "registry": { "url": "http://127.0.0.1:19090", "name": "我的站点", "group": "我的项目" } }
+```
+
+- 缺省不启用；不配置 = 行为完全不变
+- 已注册站点的展示字段：name/desc/tags/group/icon（都可省略）
+- 需要**托管启停**（导航站拉起/杀进程）的站点，仍用导航站 `sites.cordis.yml` 注册表条目
+
 ### 写一个页面插件（一个插件 = 一个项目/站点）
 
 ```ts

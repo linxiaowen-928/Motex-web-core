@@ -3,6 +3,13 @@
 > **发版规则**：每个版本必须配套一份升级文档（[docs/upgrades/](docs/upgrades/)，见 [UPGRADING.md](UPGRADING.md)），
 > 说明改动清单与破坏性改动（BREAKING）处理方式；本清单只做索引式摘要。
 
+## 0.2.2 (2026-09-06) · [升级文档](docs/upgrades/0.2.2.md)
+
+### 新增
+- 自动注册（registry client）：应用启动自动上报导航站 + 心跳续命，90s 无心跳自动下架；
+  `WebConfig.registry` 配置段（url/name/desc/tags/group/icon/heartbeatSec），缺省不启用
+- 导航站 `POST /api/nav/register|unregister`：外部注册站点只读展示，yml 条目优先
+
 ## 0.2.1 (2026-09-06) · [升级文档](docs/upgrades/0.2.1.md)
 
 ### 新增：端口记忆（稳定端口）

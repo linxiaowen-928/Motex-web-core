@@ -100,6 +100,24 @@ export interface ManageConfig {
   web: boolean
 }
 
+/** ===== register（自动接入导航站/注册中心，可选） ===== */
+
+export interface RegistryConfig {
+  /** 注册中心地址（如 http://127.0.0.1:19090；缺省空 = 不自动注册） */
+  url?: string
+  /** 展示名称（缺省 theme.siteName） */
+  name?: string
+  /** 站点 id（缺省 auto-<端口>；与注册中心已有条目冲突时自动跳过） */
+  id?: string
+  /** 一句话描述（门户卡片） */
+  desc?: string
+  tags?: string[]
+  group?: string
+  icon?: string
+  /** 心跳间隔秒（缺省 30；注册中心按 90s 无心跳自动下架） */
+  heartbeatSec?: number
+}
+
 /** ===== 总配置 ===== */
 
 export interface WebConfig {
@@ -109,6 +127,7 @@ export interface WebConfig {
   i18n: I18nConfig
   theme: ThemeConfig
   manage: ManageConfig
+  registry: RegistryConfig
 }
 
 /** 默认全套配置（无 config 文件也能起服务） */
@@ -155,6 +174,10 @@ export function defaultConfig(): WebConfig {
       path: '/manage',
       api: true,
       web: true,
+    },
+    registry: {
+      url: undefined,
+      heartbeatSec: 30,
     },
   }
 }
